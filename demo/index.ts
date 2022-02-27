@@ -11,6 +11,8 @@ import { createHTMLTransformer, createJSONTransformer, createNullTransformer } f
 import { getNodemarkPlugin } from "@dear-rama/prosemirror-nodemark";
 import '@dear-rama/prosemirror-nodemark/dist/nodemark.css';
 import { isActive } from '@dear-rama/prosemirror-nodemark/dist/utils';
+import { InputRule, inputRules } from 'prosemirror-inputrules';
+import { getMatch, getPosAfterInlineNode } from '../src/utils';
 
 
 const editor = document.querySelector('#editor') as HTMLDivElement;
@@ -60,6 +62,18 @@ const plugin = getNodemarkPlugin({nodeType: schema.nodes['flavor']});
     doc: DOMParser.fromSchema(schema).parse(content),
     plugins: [
       plugin,
+      inputRules({
+        rules: [
+          new InputRule(
+            /\/(.+)\//,
+            (state, match, start, end) => {
+              console.log(match);
+              console.log(`${start}, ${end}`)
+              return state.tr.delete(start, end).insert(start, schema.node('flavor', {code: 'test', name: 'test'}, schema.text(match[1])));
+            }
+          )
+        ]
+      }),
       ...exampleSetup({ schema, menuBar: false }),
     ],
   }),
@@ -68,15 +82,9 @@ const plugin = getNodemarkPlugin({nodeType: schema.nodes['flavor']});
     this.updateState(state);
     htmlResult.innerHTML = posView(htmlTransformer.serialize(state.doc), state.selection.from);
     pluginState.innerText = `active ${isActive(state, state.schema.nodes.flavor)} state ${JSON.stringify(plugin.getState(state))}`;
+    const actualFrom = getPosAfterInlineNode(tr, state);
+    const text = tr.selection.$from.doc.textBetween(actualFrom, tr.selection.from, "\n", "\0");
+    const range = getMatch(text, actualFrom, tr.selection.from, { match:{ char:':', allowSpace: true, allowPrefixChar: true } });
+    console.log('getMatch', JSON.stringify(range));
   }
-});
-
-// This is showing what not to do!!
-const editor1 = document.querySelector('#editor1') as HTMLDivElement;
-const content1 = document.querySelector('#content1') as HTMLDivElement;
-(window as any).view1 = new EditorView(editor1, {
-  state: EditorState.create({
-    doc: DOMParser.fromSchema(schema).parse(content1),
-    plugins: [...exampleSetup({ schema, menuBar: false })],
-  }),
 });

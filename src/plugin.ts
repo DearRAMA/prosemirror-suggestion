@@ -181,7 +181,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
           const left = `${offset.left}px`;
           const top = `${offset.bottom}px`;
 
-          if (pending) {
+          if (pending && !oldPluginState.pending) {
             if (!opts.view.pending) {
               el.classList['remove'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
               return;
@@ -194,7 +194,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
             return;
           }
 
-          if (!items || items.length === 0) {
+          if ((!items || items.length === 0) && oldPluginState.items?.length) {
             if (!opts.view.noResult) {
               el.classList['remove'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
               return;
@@ -208,8 +208,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
           }
 
           if (
-            !oldPluginState.items || 
-            oldPluginState.items.length === 0 || 
+            items && 
             oldPluginState.items !== items
           ) {
             el.innerHTML = '<div></div>';

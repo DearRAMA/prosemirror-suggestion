@@ -1,4 +1,5 @@
-import { Transaction } from "prosemirror-state";
+import { EditorState, Plugin, Transaction } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
 
 export interface SuggestionState<Item> {
   active: boolean;
@@ -6,11 +7,11 @@ export interface SuggestionState<Item> {
   pending: boolean;
   index: number;
   searchText?: string;
-  match?: Match;
+  match?: SuggestionMatch;
 };
 
-export interface SuggestionRegexpMatch {
-  exec(this: SuggestionRegexpMatch, text: string): void;
+export interface SuggestionMatcher {
+  exec(this: SuggestionMatcher, text: string): void;
   query: string,
   index: number,
   length: number,
@@ -28,8 +29,8 @@ export interface SuggestionOption<Item> {
   }
 
   transaction: {
-    setSuggestionItems(done: (item: Item[]) => void): void;
-    select(item: Item): Transaction;
+    setSuggestionItems(query: string, done: (item: Item[]) => void): void;
+    select(view: EditorView, state: EditorState, plugin: Plugin<SuggestionState<Item>>, opts: SuggestionOption<Item>, item: Item, match: SuggestionMatch): void;
   }
   view: {
     activeClass: string;
@@ -40,7 +41,7 @@ export interface SuggestionOption<Item> {
   }
 };
 
-export interface Match {
+export interface SuggestionMatch {
   range: {
     from: number,
     to: number,

@@ -1,9 +1,9 @@
-import { deactive, goNext, goPrev, select, setIndex } from "./actions";
+import { deactive, goNext, goPrev, setIndex, setItemsAsync } from "./actions";
 import { Plugin, PluginKey, Transaction } from "prosemirror-state";
 import { getMatch, getPosAfterInlineNode, IsItemElement } from "./utils";
 import './suggestion.css';
 import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
-import { SuggestionOption, SuggestionState, Match } from "./interface";
+import { SuggestionOption, SuggestionState, SuggestionMatch } from "./interface";
 
 
 
@@ -54,7 +54,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
             goPrev(view, view.state, plugin, opts);
             return true;
           case 'Enter':
-            select(view, view.state, plugin, opts);
+            opts.transaction.select(view, view.state, plugin, opts, pluginState.items?.[pluginState.index], pluginState.match as SuggestionMatch);
             return true;
           case 'Esc':
             deactive(view, view.state, plugin, opts);
@@ -87,6 +87,12 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
         
         const oldPluginState = plugin.getState(oldState);
         const meta = tr.getMeta(plugin);
+        if (typeof meta?.index === 'number') {
+          return {
+            ...oldPluginState,
+            index: meta?.index,
+          }
+        }
         if (meta?.deactive) {
           return {
             ...oldPluginState,
@@ -103,13 +109,11 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
             pending: false,
           };
         }
-        const initPluginState = getNewState<Item>();
         const { selection } = tr;
         if (selection.from !== selection.to) {
           return oldPluginState;
         }
 
-        const { selection: oldSelection } = oldState;
         const $position = selection.$from;
 
         const actualFrom = getPosAfterInlineNode(tr, newState);
@@ -129,11 +133,12 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
         let pending = false;
         _disposablePending.disposed = true;
         const disposablePending = new Disposable();
-        opts.transaction.setSuggestionItems((items) => {
+        opts.transaction.setSuggestionItems(match.queryText, (items) => {
           immidiatedResult = items;
           if (pending && !disposablePending.disposed) {
             const view = disposablePending.view;
-            view?.dispatch(view?.state.tr.setMeta(plugin, { setItems: items }));
+            if (!view) throw 'View missing';
+            setItemsAsync(view, view.state, plugin, opts, items);
           }
         });
         if (immidiatedResult) {
@@ -190,16 +195,17 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
           const offset = decorationDOM.getBoundingClientRect();
           const left = `${offset.left}px`;
           const top = `${offset.bottom}px`;
+          el.style.left = left;
+          el.style.top = top;
 
+          document.body.append(el);
           if (pending && !oldPluginState.pending) {
             if (!opts.view.pending) {
               el.classList['remove'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
               return;
             }
-            el.innerHTML = '<div></div>';
+            el.innerHTML = '';
             el.append(opts.view.pending());
-            el.style.left = left;
-            el.style.top = top;
             el.classList['add'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
             return;
           }
@@ -209,10 +215,8 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
               el.classList['remove'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
               return;
             }
-            el.innerHTML = '<div></div>';
+            el.innerHTML = '';
             el.append(opts.view.noResult());
-            el.style.left = left;
-            el.style.top = top;
             el.classList['add'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
             return;
           }
@@ -221,22 +225,22 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
             items && 
             oldPluginState.items !== items
           ) {
-            el.innerHTML = '<div></div>';
+            el.innerHTML = '';
             el.classList['add'](HTMLCLASS_ITEM_CONTAINER);
             const orderedList = document.createElement('ol');
             el.append(orderedList);
 
             orderedList.addEventListener('click', (event) => {
               if (IsItemElement(event)) {
-                select(view, view.state, plugin, opts);
+                opts.transaction.select(view, view.state, plugin, opts, items[index], match);
                 view.focus();
               }
             });
             orderedList.addEventListener('mouseover', (event) => {
               let item;
               if (item = IsItemElement(event)) {
-                const index = item.dataset['suggestion-item-index'];
-                if (index === undefined) return;
+                const index = item.dataset['suggestionItemIndex'];
+                if (typeof index === 'undefined') return;
                 setIndex(view, view.state, plugin, opts, Number(index));
               }
             });
@@ -252,7 +256,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
             });
             itemElements?.forEach((element, index) => {
               element.classList['add']('suggestion-item');
-              element.dataset['suggestion-item-index'] = index.toString();
+              element.setAttribute('data-suggestion-item-index', index.toString());
             });
             orderedList.append(...itemElements??[]);
 
@@ -269,4 +273,5 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
       }
     }
   });
+  return plugin;
 }

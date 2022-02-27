@@ -1,7 +1,7 @@
 import { Node as PMNode, ResolvedPos } from "prosemirror-model";
 import { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
-import { Match, SuggestionOption, SuggestionRegexpMatch as SuggestionMatch } from "./interface";
+import { SuggestionMatch, SuggestionOption, SuggestionMatcher } from "./interface";
 
 export function IsItemElement(event: MouseEvent): false | HTMLElement {
   if (!(event.target instanceof HTMLElement)) return false;
@@ -62,7 +62,7 @@ class DefaultSuggestionRegexpMatch<Item = any> {
   }
 }
 
-export function getRegex<Item>(opts: Pick<SuggestionOption<Item>, 'match'>): SuggestionMatch {
+export function getRegex<Item>(opts: Pick<SuggestionOption<Item>, 'match'>): SuggestionMatcher {
   const { match: {
     char,
     allowSpace = false,
@@ -98,18 +98,18 @@ export function getRegex<Item>(opts: Pick<SuggestionOption<Item>, 'match'>): Sug
   return match;
 }
 
-export function getMatch<Item>(text: string, from: number, to: number, opts: Pick<SuggestionOption<Item>, 'match'>): Match | null {
-  const suggestionMatch = getRegex(opts);
+export function getMatch<Item>(text: string, from: number, to: number, opts: Pick<SuggestionOption<Item>, 'match'>): SuggestionMatch | null {
+  const suggestionMatcher = getRegex(opts);
 
-  suggestionMatch.exec(text);
+  suggestionMatcher.exec(text);
 
-  if (!suggestionMatch.valid) return null;
+  if (!suggestionMatcher.valid) return null;
 
   return {
-    queryText: suggestionMatch.query,
+    queryText: suggestionMatcher.query,
     range: {
-      from : from + suggestionMatch.index,
-      to: from + suggestionMatch.index + suggestionMatch.length,
+      from : from + suggestionMatcher.index,
+      to: from + suggestionMatcher.index + suggestionMatcher.length,
     }
   };
 }

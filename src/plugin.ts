@@ -1,4 +1,4 @@
-import { goNext, goPrev, select, setIndex } from "./actions";
+import { deactive, goNext, goPrev, select, setIndex } from "./actions";
 import { Plugin, PluginKey, Transaction } from "prosemirror-state";
 import { getMatch, IsItemElement } from "./utils";
 import './suggestion.css';
@@ -56,7 +56,9 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
           case 'Enter':
             select(view, view.state, plugin, opts);
             return true;
-          // case 'Esc':
+          case 'Esc':
+            deactive(view, view.state, plugin, opts);
+            return true;
           default: 
             return false;
         }
@@ -85,6 +87,12 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
         
         const oldPluginState = plugin.getState(oldState);
         const meta = tr.getMeta(plugin);
+        if (meta?.deactive) {
+          return {
+            ...oldPluginState,
+            active: false,
+          }
+        }
         if (meta?.setItems) {
           const items: Item[] = meta.setItems;
           return {

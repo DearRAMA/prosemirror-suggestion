@@ -25,3 +25,7 @@ export function goPrev<Item>(view: EditorView, state: EditorState, plugin: Plugi
 export function setItems<Item>(view: EditorView, state: EditorState, plugin: Plugin<SuggestionState<Item>>, opts: SuggestionOption<Item>, items: Item[]) {
   return false;
 }
+
+export function deactive<Item>(view: EditorView, state: EditorState, plugin: Plugin<SuggestionState<Item>>, opts: SuggestionOption<Item>) {
+  view.dispatch(view.state.tr.setMeta(plugin, { deactive: true }));
+}

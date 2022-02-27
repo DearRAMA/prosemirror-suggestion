@@ -1,6 +1,6 @@
 # `prosemirror-suggestion`
 
-**This repo is cloned concept, template and code snippet from [prosemirror-codemark](https://github.com/curvenote/prosemirror-codemark)**
+**This repo is cloned template from [prosemirror-codemark](https://github.com/curvenote/prosemirror-codemark) and concept and code snippet from [prosemirror-mentions](https://github.com/joelewis/prosemirror-mentions)**
 
 # Below README is just copied from prosemirror-codemark and should be updated.
 

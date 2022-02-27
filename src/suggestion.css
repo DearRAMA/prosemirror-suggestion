@@ -1,0 +1,10 @@
+.suggestion-item-container {
+  position: fixed;
+  z-index: 999999;
+  display: none;
+}
+
+.suggestion-item-container.suggestion-item-container-active {
+  display: block;
+}
+

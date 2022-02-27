@@ -36,6 +36,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
 
   // dropdown element
   const el = document.createElement('div');
+  el.classList['add'](HTMLCLASS_ITEM_CONTAINER);
 
   const plugin: Plugin<SuggestionState<Item>> = new Plugin<SuggestionState<Item>>({
     key: pluginKey,
@@ -133,6 +134,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
         let pending = false;
         _disposablePending.disposed = true;
         const disposablePending = new Disposable();
+        _disposablePending = disposablePending;
         opts.transaction.setSuggestionItems(match.queryText, (items) => {
           immidiatedResult = items;
           if (pending && !disposablePending.disposed) {
@@ -152,6 +154,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
             match: match,
           };
         } else {
+          pending = true;
           return {
             active: true,
             index: oldPluginState.index,
@@ -193,13 +196,14 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
 
           if (!decorationDOM || decorationDOM.nodeType !== Node.ELEMENT_NODE) return;
           const offset = decorationDOM.getBoundingClientRect();
-          const left = `${offset.left}px`;
+          // const left = `${offset.left}px`;
+          const left = `${offset.right}px`;
           const top = `${offset.bottom}px`;
           el.style.left = left;
           el.style.top = top;
 
           document.body.append(el);
-          if (pending && !oldPluginState.pending) {
+          if (pending) {
             if (!opts.view.pending) {
               el.classList['remove'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
               return;
@@ -210,7 +214,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
             return;
           }
 
-          if ((!items || items.length === 0) && oldPluginState.items?.length) {
+          if ((!items || items.length === 0)) {
             if (!opts.view.noResult) {
               el.classList['remove'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
               return;
@@ -226,7 +230,6 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
             oldPluginState.items !== items
           ) {
             el.innerHTML = '';
-            el.classList['add'](HTMLCLASS_ITEM_CONTAINER);
             const orderedList = document.createElement('ol');
             el.append(orderedList);
 

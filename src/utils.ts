@@ -1,5 +1,7 @@
-import { ResolvedPos } from "prosemirror-model";
-import { Match, SuggestionOption } from "./interface";
+import { Node as PMNode, ResolvedPos } from "prosemirror-model";
+import { EditorState, Transaction } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
+import { Match, SuggestionOption, SuggestionRegexpMatch as SuggestionMatch } from "./interface";
 
 export function IsItemElement(event: MouseEvent): false | HTMLElement {
   if (!(event.target instanceof HTMLElement)) return false;
@@ -12,6 +14,125 @@ export function IsItemElement(event: MouseEvent): false | HTMLElement {
   }
 }
 
-export function getMatch<Item>($position: ResolvedPos, opts: SuggestionOption<Item>): Match {
+export function changeRegexSpecialCharactor(char: string) {
+  const specialCharactors = '\\^$*+?.()|{}';
+  if (specialCharactors.indexOf(char) !== -1) return `\\${char}`;
+  else return char; 
+}
 
+class DefaultSuggestionRegexpMatch<Item = any> {
+  regexp: RegExp;
+  allowPrefixChar: boolean;
+  char: string;
+
+  constructor(opts: Pick<SuggestionOption<Item>, 'match'>) {
+    const { match: {
+      char,
+      allowSpace = false,
+      allowPrefixChar = false,
+    }} = opts;
+    this.allowPrefixChar = allowPrefixChar;
+    this.char = char;
+    
+    this.regexp = new RegExp(
+      (allowPrefixChar ? '' : '(^|\\s)') +
+      changeRegexSpecialCharactor(char) +
+      (allowSpace ? 
+        "((?:\\p{L}|[-_\\+]|\\s)+)$" :
+        '((?:\\p{L}|[-_\\+])+)$'),
+      "u"
+    );
+  }
+
+  valid: boolean = false;
+  query: string = '';
+  index: number = 0;
+  length: number = 0;
+
+  exec(text: string) {
+    const match = text.match(this.regexp);
+    if (!match || typeof match.index === 'undefined') {
+      this.valid = false;
+      return;
+    };
+    this.valid = true;
+    this.query = match[this.allowPrefixChar ? 1 : 2];
+    this.index = (match.index as number)+ (this.allowPrefixChar ? 0 : match[1].length);
+    this.length = this.char.length + (this.allowPrefixChar ? match[1].length : match[2].length);
+  }
+}
+
+export function getRegex<Item>(opts: Pick<SuggestionOption<Item>, 'match'>): SuggestionMatch {
+  const { match: {
+    char,
+    allowSpace = false,
+    allowPrefixChar = false,
+  }} = opts;
+
+  const match = {
+    regexp: new RegExp(
+      (allowPrefixChar ? '' : '(^|\\s)') +
+      changeRegexSpecialCharactor(char) +
+      (allowSpace ? 
+        "((?:\\p{L}|[-_\\+]|\\s)+)$" :
+        '((?:\\p{L}|[-_\\+])+)$'),
+      "u"
+    ),
+    valid: false,
+    query: '',
+    index: 0,
+    length: 0,
+    exec(text: string) {
+      const match = text.match(this.regexp);
+      if (!match || typeof match.index === 'undefined') {
+        this.valid = false;
+        return;
+      };
+      this.valid = true;
+      this.query = match[allowPrefixChar ? 1 : 2];
+      this.index = (match.index as number)+ (allowPrefixChar ? 0 : match[1].length);
+      this.length = char.length + (allowPrefixChar ? match[1].length : match[2].length);
+    }
+  }
+
+  return match;
+}
+
+export function getMatch<Item>(text: string, from: number, to: number, opts: Pick<SuggestionOption<Item>, 'match'>): Match | null {
+  const suggestionMatch = getRegex(opts);
+
+  suggestionMatch.exec(text);
+
+  if (!suggestionMatch.valid) return null;
+
+  return {
+    queryText: suggestionMatch.query,
+    range: {
+      from : from + suggestionMatch.index,
+      to: from + suggestionMatch.index + suggestionMatch.length,
+    }
+  };
+}
+
+export function getPosAfterInlineNode(tr: Transaction, state: EditorState) {
+  const { $from } = tr.selection;
+  const from = $from.before($from.depth);
+  const to = tr.selection.from;
+  let root: PMNode;
+  let last = from;
+  state.selection.$from.doc.nodesBetween(from, to, (node, pos, parent, index) => {
+    console.debug('suggestion', 'getPosAfterInlineNode', from, to, `node ${JSON.stringify(node)}, pos ${pos}, parent ${parent}, index ${index}`);
+
+    if (!root) {
+      root = node;
+      last = Math.max(last, pos+1);
+      return;
+    }
+    if (node.type === state.schema.nodes.text) return;
+
+    console.debug('suggestion', 'getPosAfterInlineNode', `pos + node.nodeSize ${pos + node.nodeSize}`);
+    last = Math.max(last, pos + node.nodeSize);
+  });
+  console.debug('suggestion', 'getPosAfterInlineNode', `last ${last}`);
+  return last;
 }

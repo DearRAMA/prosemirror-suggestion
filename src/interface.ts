@@ -9,9 +9,22 @@ export interface SuggestionState<Item> {
   match?: Match;
 };
 
+export interface SuggestionRegexpMatch {
+  exec(this: SuggestionRegexpMatch, text: string): void;
+  query: string,
+  index: number,
+  length: number,
+  valid: boolean,
+  [key: string]: any;
+}
+
 export interface SuggestionOption<Item> {
   match: {
     char: string,
+    /** @default false */
+    allowSpace?: boolean,
+    /** @default false */
+    allowPrefixChar?: boolean,
   }
 
   transaction: {

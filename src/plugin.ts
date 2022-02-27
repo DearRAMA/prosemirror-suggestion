@@ -1,6 +1,6 @@
 import { deactive, goNext, goPrev, select, setIndex } from "./actions";
 import { Plugin, PluginKey, Transaction } from "prosemirror-state";
-import { getMatch, IsItemElement } from "./utils";
+import { getMatch, getPosAfterInlineNode, IsItemElement } from "./utils";
 import './suggestion.css';
 import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
 import { SuggestionOption, SuggestionState, Match } from "./interface";
@@ -106,19 +106,24 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
         const initPluginState = getNewState<Item>();
         const { selection } = tr;
         if (selection.from !== selection.to) {
-          return initPluginState;
+          return oldPluginState;
         }
 
         const { selection: oldSelection } = oldState;
         const $position = selection.$from;
 
-        var parastart = $position.before();
-        const text = $position.doc.textBetween(parastart, $position.pos, "\n", "\0");
+        const actualFrom = getPosAfterInlineNode(tr, newState);
+
+        const text = $position.doc.textBetween(actualFrom, $position.pos, "\n", "\0");
         if (oldPluginState.searchText === text) {
           return oldPluginState;
-        }
+        }        
 
-        const match = getMatch($position, opts);
+        const match = getMatch(text, actualFrom, selection.from, opts);
+
+        if (!match) {
+          return getNewState();
+        }
 
         let immidiatedResult: Item[] | null = null; 
         let pending = false;
@@ -138,6 +143,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
             index: oldPluginState.index >= items.length ? items.length-1 : 0,
             items: items,
             pending: false,
+            searchText: text,
             match: match,
           };
         } else {
@@ -157,7 +163,11 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
           if (!_disposablePending.disposed) _disposablePending.view = view;
 
           const oldPluginState = plugin.getState(prevState);
-          const { active, index, pending, items, match } = plugin.getState(view.state);
+          const newPluginState = plugin.getState(view.state);
+          if (oldPluginState === newPluginState) {
+            return;
+          }
+          const { active, index, pending, items, match } = newPluginState;
 
           if (!active) {
             el.classList['remove'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);

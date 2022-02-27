@@ -204,37 +204,40 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
             oldPluginState.items.length === 0 || 
             oldPluginState.items !== items
           ) {
-            el.innerHTML = '<ol></ol>';
+            el.innerHTML = '<div></div>';
             el.classList['add'](HTMLCLASS_ITEM_CONTAINER);
-            el.addEventListener('click', (event) => {
+            const orderedList = document.createElement('ol');
+            el.append(orderedList);
+
+            orderedList.addEventListener('click', (event) => {
               if (IsItemElement(event)) {
                 select(view, view.state, plugin, opts);
                 view.focus();
               }
             });
-            el.addEventListener('mouseover', (event) => {
+            orderedList.addEventListener('mouseover', (event) => {
               let item;
               if (item = IsItemElement(event)) {
                 const index = item.dataset['suggestion-item-index'];
                 if (index === undefined) return;
                 setIndex(view, view.state, plugin, opts, Number(index));
               }
-            })
+            });
             const itemElements = items.map(item => {
               const res = opts.view.suggestionItem(item);
+              const li = document.createElement('li');
               if (typeof res === 'string') {
-                const template = document.createElement('template');
-                template.innerHTML = res;
-                return template;
+                li.innerHTML = res;
               } else {
-                return res;
+                li.append(res);
               }
+              return li;
             });
             itemElements?.forEach((element, index) => {
               element.classList['add']('suggestion-item');
               element.dataset['suggestion-item-index'] = index.toString();
             });
-            el.append(...itemElements??[]);
+            orderedList.append(...itemElements??[]);
 
             // active
             el.classList['add'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);

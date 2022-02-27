@@ -13,6 +13,8 @@ import '@dear-rama/prosemirror-nodemark/dist/nodemark.css';
 import { isActive } from '@dear-rama/prosemirror-nodemark/dist/utils';
 import { InputRule, inputRules } from 'prosemirror-inputrules';
 import { getMatch, getPosAfterInlineNode } from '../src/utils';
+import { SuggestionOption } from '../src/interface';
+import { getSuggestionPlugin } from '../src/plugin';
 
 
 const editor = document.querySelector('#editor') as HTMLDivElement;
@@ -23,9 +25,45 @@ export const schema = new Schema({
   nodes: (basicSchema.spec.nodes as OrderedMap<NodeSpec>).append({flavor: FlavorNode})
 });
 
+
 const htmlTransformer = createHTMLTransformer(schema);
 const htmlResult = document.querySelector('#html-result') as HTMLDivElement;
 const pluginState = document.querySelector('#plugin-state') as HTMLDivElement;
+
+
+const suggestionOption: SuggestionOption<string> = {
+  match: {
+    char: ':',
+    allowPrefixChar: true,
+    allowSpace: true,
+  },
+  transaction: {
+    setSuggestionItems(query, done) {
+      const randomItems = Array.from({ length: 10 }).map(()=>query+Math.random().toString(36).slice(2,11));
+      done(randomItems);
+    },
+    select(view, state, plugin, opts, item, match) {
+      const { range: { from, to } } = match;
+      const flavorNode = state.schema.nodes.flavor.create(
+        {
+          code: item,
+          name: item,
+        },
+        schema.text(item),
+      )
+      view.dispatch(view.state.tr.replaceWith(from, to, flavorNode));
+    },
+  },
+  view: {
+    activeClass: 'suggestion-item-active',
+    decorationClass: 'prosemirror-suggestion',
+    suggestionItem(item) {
+      return item;
+    },
+  }
+}
+
+const suggestionPlugin = getSuggestionPlugin(suggestionOption);
 
 function posView(html: string, selection: number) {
   let index = 0;
@@ -61,6 +99,7 @@ const plugin = getNodemarkPlugin({nodeType: schema.nodes['flavor']});
   state: EditorState.create({
     doc: DOMParser.fromSchema(schema).parse(content),
     plugins: [
+      suggestionPlugin,
       plugin,
       inputRules({
         rules: [
@@ -81,7 +120,7 @@ const plugin = getNodemarkPlugin({nodeType: schema.nodes['flavor']});
     const state = this.state.apply(tr);
     this.updateState(state);
     htmlResult.innerHTML = posView(htmlTransformer.serialize(state.doc), state.selection.from);
-    pluginState.innerText = `active ${isActive(state, state.schema.nodes.flavor)} state ${JSON.stringify(plugin.getState(state))}`;
+    pluginState.innerText = JSON.stringify(suggestionPlugin.getState(state));
     const actualFrom = getPosAfterInlineNode(tr, state);
     const text = tr.selection.$from.doc.textBetween(actualFrom, tr.selection.from, "\n", "\0");
     const range = getMatch(text, actualFrom, tr.selection.from, { match:{ char:':', allowSpace: true, allowPrefixChar: true } });

@@ -40,7 +40,14 @@ const suggestionOption: SuggestionOption<string> = {
   transaction: {
     setSuggestionItems(query, done) {
       const randomItems = Array.from({ length: 10 }).map(()=>query+Math.random().toString(36).slice(2,11));
-      done(randomItems);
+      // // normal
+      // done(randomItems);
+      pending
+      setTimeout(()=>
+        done(randomItems), 
+      500);
+      // // noResult
+      // done([]);      
     },
     select(view, state, plugin, opts, item, match) {
       const { range: { from, to } } = match;
@@ -60,6 +67,12 @@ const suggestionOption: SuggestionOption<string> = {
     suggestionItem(item) {
       return item;
     },
+    noResult() {
+      return 'no result';
+    },
+    pending() {
+      return 'pending';
+    }
   }
 }
 

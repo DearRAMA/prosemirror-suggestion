@@ -30,6 +30,10 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
   let showListTimeoutId: NodeJS.Timeout | null = null;
   let _disposablePending = new Disposable();
 
+  // const
+  const HTMLCLASS_ITEM_CONTAINER = 'suggestion-item-container';
+  const HTMLCLASS_ITEM_CONTAINER_ACTIVE = 'suggestion-item-container-active';
+
   // dropdown element
   const el = document.createElement('div');
 
@@ -145,15 +149,63 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
           if (!_disposablePending.disposed) _disposablePending.view = view;
 
           const oldPluginState = plugin.getState(prevState);
-          const newPluginState = plugin.getState(view.state);
+          const { active, index, pending, items, match } = plugin.getState(view.state);
+
+          if (!active) {
+            el.classList['remove'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
+            return;
+          }
+
+          if (!match) {
+            el.classList['remove'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
+            return;
+          }
+
+          const { node: element } = view.domAtPos(view.state.selection.$from.pos);
+          if (!element || element.nodeType !== Node.ELEMENT_NODE) return;
+
+          const decorationDOM = (element as Element)?.querySelector(
+            `.${opts.view.decorationClass}`
+          );
+
+          if (!decorationDOM || decorationDOM.nodeType !== Node.ELEMENT_NODE) return;
+          const offset = decorationDOM.getBoundingClientRect();
+          const left = `${offset.left}px`;
+          const top = `${offset.bottom}px`;
+
+          if (pending) {
+            if (!opts.view.pending) {
+              el.classList['remove'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
+              return;
+            }
+            el.innerHTML = '<div></div>';
+            el.append(opts.view.pending());
+            el.style.left = left;
+            el.style.top = top;
+            el.classList['add'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
+            return;
+          }
+
+          if (!items || items.length === 0) {
+            if (!opts.view.noResult) {
+              el.classList['remove'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
+              return;
+            }
+            el.innerHTML = '<div></div>';
+            el.append(opts.view.noResult());
+            el.style.left = left;
+            el.style.top = top;
+            el.classList['add'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
+            return;
+          }
 
           if (
             !oldPluginState.items || 
             oldPluginState.items.length === 0 || 
-            oldPluginState.items !== newPluginState.items
+            oldPluginState.items !== items
           ) {
             el.innerHTML = '<ol></ol>';
-            el.classList['add']('suggestion-item-container');
+            el.classList['add'](HTMLCLASS_ITEM_CONTAINER);
             el.addEventListener('click', (event) => {
               if (IsItemElement(event)) {
                 select(view, view.state, plugin, opts);
@@ -168,7 +220,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
                 setIndex(view, view.state, plugin, opts, Number(index));
               }
             })
-            const itemElements = newPluginState.items?.map(item => {
+            const itemElements = items.map(item => {
               const res = opts.view.suggestionItem(item);
               if (typeof res === 'string') {
                 const template = document.createElement('template');
@@ -183,27 +235,16 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
               element.dataset['suggestion-item-index'] = index.toString();
             });
             el.append(...itemElements??[]);
+
+            // active
+            el.classList['add'](HTMLCLASS_ITEM_CONTAINER_ACTIVE);
           }
           
-          // active
-          el.classList['add']('suggestion-item-container-active');
-
           // update selected ItemElement
           el.querySelectorAll(`.${opts.view.activeClass}`).forEach(element => element.classList['remove'](opts.view.activeClass));
-          el.querySelector(`[data-suggestion-item-index="${newPluginState.index}"]`)?.classList['add'](opts.view.activeClass);
+          el.querySelector(`[data-suggestion-item-index="${index}"]`)?.classList['add'](opts.view.activeClass);
 
-          const { node: element } = view.domAtPos(view.state.selection.$from.pos);
-          if (!element || element.nodeType !== Node.ELEMENT_NODE) return;
-
-          const decorationDOM = (element as Element)?.querySelector(
-            `.${opts.view.decorationClass}`
-          );
-
-          if (!decorationDOM || decorationDOM.nodeType !== Node.ELEMENT_NODE) return;
-          const offset = decorationDOM.getBoundingClientRect();
-          el.style.left = `${offset.left}px`;
-          el.style.top = `${offset.bottom}px`;
-
+          return;
         }
       }
     }

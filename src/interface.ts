@@ -22,6 +22,8 @@ export interface SuggestionOption<Item> {
     activeClass: string;
     decorationClass: string;
     suggestionItem(item: Item): string | HTMLElement
+    pending?(): string | HTMLElement;
+    noResult?(): string | HTMLElement;
   }
 };
 

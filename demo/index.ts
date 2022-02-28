@@ -62,8 +62,6 @@ const suggestionOption: SuggestionOption<string> = {
     },
   },
   view: {
-    activeClass: 'suggestion-item-active',
-    decorationClass: 'prosemirror-suggestion',
     suggestionItem(item) {
       return item;
     },

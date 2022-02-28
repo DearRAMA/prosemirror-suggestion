@@ -42,7 +42,7 @@ const suggestionOption: SuggestionOption<string> = {
       const randomItems = Array.from({ length: 10 }).map(()=>query+Math.random().toString(36).slice(2,11));
       // // normal
       // done(randomItems);
-      pending
+      // pending
       setTimeout(()=>
         done(randomItems), 
       500);

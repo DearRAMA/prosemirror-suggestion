@@ -1,6 +1,7 @@
-import { SuggestionOption, SuggestionState } from "./interface";
 import { EditorState, Plugin } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
+import { SuggestionOption, SuggestionState } from "./interface";
+
 
 export function setIndex<Item>(view: EditorView, state: EditorState, plugin: Plugin<SuggestionState<Item>>, opts: SuggestionOption<Item>, index: number) {
   view.dispatch(view.state.tr.setMeta(plugin, { index: index }));

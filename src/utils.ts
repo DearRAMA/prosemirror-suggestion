@@ -1,9 +1,9 @@
-import { Node as PMNode, ResolvedPos } from "prosemirror-model";
+import { Node as PMNode } from "prosemirror-model";
 import { EditorState, Transaction } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
 import { SuggestionMatch, SuggestionOption, SuggestionMatcher } from "./interface";
 
-export function IsItemElement(event: MouseEvent): false | HTMLElement {
+
+export function isItemElement(event: MouseEvent): false | HTMLElement {
   if (!(event.target instanceof HTMLElement)) return false;
 
   const child = event.target.closest('.suggestion-item');

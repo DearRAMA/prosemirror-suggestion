@@ -1,4 +1,4 @@
-import { EditorState, Plugin, Transaction } from "prosemirror-state";
+import { EditorState, Plugin } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 
 export interface SuggestionState<Item> {
@@ -20,25 +20,28 @@ export interface SuggestionMatcher {
 }
 
 export interface SuggestionOption<Item> {
+  key?: string;
+
   match: {
     char: string,
     /** @default false */
     allowSpace?: boolean,
     /** @default false */
     allowPrefixChar?: boolean,
-  }
+  };
 
   transaction: {
     setSuggestionItems(query: string, done: (item: Item[]) => void): void;
     select(view: EditorView, state: EditorState, plugin: Plugin<SuggestionState<Item>>, opts: SuggestionOption<Item>, item: Item, match: SuggestionMatch): void;
-  }
+  };
+
   view: {
     activeClass: string;
     decorationClass: string;
     suggestionItem(item: Item): string | HTMLElement
     pending?(): string | HTMLElement;
     noResult?(): string | HTMLElement;
-  }
+  };
 };
 
 export interface SuggestionMatch {

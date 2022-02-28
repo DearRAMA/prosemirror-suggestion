@@ -1,10 +1,11 @@
-import { deactive, goNext, goPrev, setIndex, setItemsAsync } from "./actions";
-import { Plugin, PluginKey, Transaction } from "prosemirror-state";
-import { getMatch, getPosAfterInlineNode, IsItemElement } from "./utils";
-import './suggestion.css';
-import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
-import { SuggestionOption, SuggestionState, SuggestionMatch } from "./interface";
 
+import { Plugin, PluginKey } from "prosemirror-state";
+import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
+import { deactive, goNext, goPrev, setIndex, setItemsAsync } from "./actions";
+import { HTMLCLASS_ITEM, HTMLCLASS_ITEM_CONTAINER, HTMLCLASS_ITEM_CONTAINER_ACTIVE, HTMLDATASET_INDEX_CAMEL, HTMLDATASET_INDEX_HYPHEN, PLUGINKEY_PREFIX } from './constant';
+import { SuggestionOption, SuggestionState, SuggestionMatch } from "./interface";
+import { getMatch, getPosAfterInlineNode, isItemElement } from "./utils";
+import './suggestion.css';
 
 
 function getNewState<Item>(): SuggestionState<Item> {
@@ -15,24 +16,15 @@ function getNewState<Item>(): SuggestionState<Item> {
   };
 }
 
-function errorPendingDone<Item>(items: Item[]) {
-  console.error('pendingDone');
-  throw 'PendingDone';
-}
-
 class Disposable {
   public view: EditorView | null = null;
   public disposed: boolean = false;
 }
 
 export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
-  const pluginKey = new PluginKey('suggestion');
-  let showListTimeoutId: NodeJS.Timeout | null = null;
+  const key = `${PLUGINKEY_PREFIX}${opts.key ?? Math.random().toString(36).slice(2,10)}`
+  const pluginKey = new PluginKey(key);
   let _disposablePending = new Disposable();
-
-  // const
-  const HTMLCLASS_ITEM_CONTAINER = 'suggestion-item-container';
-  const HTMLCLASS_ITEM_CONTAINER_ACTIVE = 'suggestion-item-container-active';
 
   // dropdown element
   const el = document.createElement('div');
@@ -234,15 +226,15 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
             el.append(orderedList);
 
             orderedList.addEventListener('click', (event) => {
-              if (IsItemElement(event)) {
+              if (isItemElement(event)) {
                 opts.transaction.select(view, view.state, plugin, opts, items[index], match);
                 view.focus();
               }
             });
             orderedList.addEventListener('mouseover', (event) => {
               let item;
-              if (item = IsItemElement(event)) {
-                const index = item.dataset['suggestionItemIndex'];
+              if (item = isItemElement(event)) {
+                const index = item.dataset[HTMLDATASET_INDEX_CAMEL];
                 if (typeof index === 'undefined') return;
                 setIndex(view, view.state, plugin, opts, Number(index));
               }
@@ -258,8 +250,8 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
               return li;
             });
             itemElements?.forEach((element, index) => {
-              element.classList['add']('suggestion-item');
-              element.setAttribute('data-suggestion-item-index', index.toString());
+              element.classList['add'](HTMLCLASS_ITEM);
+              element.setAttribute(HTMLDATASET_INDEX_HYPHEN, index.toString());
             });
             orderedList.append(...itemElements??[]);
 
@@ -269,7 +261,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
           
           // update selected ItemElement
           el.querySelectorAll(`.${opts.view.activeClass}`).forEach(element => element.classList['remove'](opts.view.activeClass));
-          el.querySelector(`[data-suggestion-item-index="${index}"]`)?.classList['add'](opts.view.activeClass);
+          el.querySelector(`[${HTMLDATASET_INDEX_HYPHEN}="${index}"]`)?.classList['add'](opts.view.activeClass);
 
           return;
         }

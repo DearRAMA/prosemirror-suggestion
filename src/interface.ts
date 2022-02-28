@@ -36,9 +36,9 @@ export interface SuggestionOption<Item> {
   };
 
   view: {
-    activeClass: string;
-    decorationClass: string;
-    suggestionItem(item: Item): string | HTMLElement
+    /** @default 'start' */
+    listPosition?: 'start' | 'end';
+    suggestionItem(item: Item): string | HTMLElement;
     pending?(): string | HTMLElement;
     noResult?(): string | HTMLElement;
   };

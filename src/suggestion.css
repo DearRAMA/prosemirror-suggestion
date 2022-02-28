@@ -1,10 +1,37 @@
+.suggestion-decoration {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid #999;
+}
+
 .suggestion-item-container {
   position: fixed;
   z-index: 999999;
   display: none;
+
+  background: #fff;
+  border: 1px solid #999;
 }
 
 .suggestion-item-container.suggestion-item-container-active {
   display: block;
 }
 
+.suggestion-item-container>ol {
+  padding: 0px;
+  margin: 0px;
+  list-style: none;
+}
+
+.suggestion-item {
+  padding: 5px;
+  border-top: 1px solid;
+}
+
+.suggestion-item:first-child {
+  border-top: none;
+}
+
+.suggestion-item.suggestion-active {
+  background: #08c;
+  color: #fff;
+}

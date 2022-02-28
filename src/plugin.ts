@@ -1,8 +1,7 @@
-
 import { Plugin, PluginKey } from "prosemirror-state";
 import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
 import { deactive, goNext, goPrev, setIndex, setItemsAsync } from "./actions";
-import { HTMLCLASS_ITEM, HTMLCLASS_ITEM_CONTAINER, HTMLCLASS_ITEM_CONTAINER_ACTIVE, HTMLDATASET_INDEX_CAMEL, HTMLDATASET_INDEX_HYPHEN, PLUGINKEY_PREFIX } from './constant';
+import { HTMLCLASS_ACTIVE, HTMLCLASS_DECORATION, HTMLCLASS_ITEM, HTMLCLASS_ITEM_CONTAINER, HTMLCLASS_ITEM_CONTAINER_ACTIVE, HTMLDATASET_INDEX_CAMEL, HTMLDATASET_INDEX_HYPHEN, PLUGINKEY_PREFIX } from './constant';
 import { SuggestionOption, SuggestionState, SuggestionMatch } from "./interface";
 import { getMatch, getPosAfterInlineNode, isItemElement } from "./utils";
 import './suggestion.css';
@@ -65,7 +64,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
         return DecorationSet.create(state.doc, [
           Decoration.inline(from, to, {
             nodeName: 'span',
-            class: opts.view.decorationClass,
+            class: HTMLCLASS_DECORATION,
           })
         ])
       }
@@ -183,13 +182,13 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
           if (!element || element.nodeType !== Node.ELEMENT_NODE) return;
 
           const decorationDOM = (element as Element)?.querySelector(
-            `.${opts.view.decorationClass}`
+            `.${HTMLCLASS_DECORATION}`
           );
 
           if (!decorationDOM || decorationDOM.nodeType !== Node.ELEMENT_NODE) return;
           const offset = decorationDOM.getBoundingClientRect();
-          // const left = `${offset.left}px`;
-          const left = `${offset.right}px`;
+          const left = (!opts.view.listPosition || opts.view.listPosition === 'start') ?
+            `${offset.left}px` : `${offset.right}px`;
           const top = `${offset.bottom}px`;
           el.style.left = left;
           el.style.top = top;
@@ -260,8 +259,8 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
           }
           
           // update selected ItemElement
-          el.querySelectorAll(`.${opts.view.activeClass}`).forEach(element => element.classList['remove'](opts.view.activeClass));
-          el.querySelector(`[${HTMLDATASET_INDEX_HYPHEN}="${index}"]`)?.classList['add'](opts.view.activeClass);
+          el.querySelectorAll(`.${HTMLCLASS_ITEM}.${HTMLCLASS_ACTIVE}`).forEach(element => element.classList['remove'](HTMLCLASS_ACTIVE));
+          el.querySelector(`[${HTMLDATASET_INDEX_HYPHEN}="${index}"]`)?.classList['add'](HTMLCLASS_ACTIVE);
 
           return;
         }

@@ -228,7 +228,7 @@ export function getSuggestionPlugin<Item>(opts: SuggestionOption<Item>) {
               let item;
               if (item = isItemElement(event)) {
                 const index = item.dataset[HTMLDATASET_INDEX_CAMEL];
-                if (typeof index !== 'undefined') return;
+                if (typeof index === 'undefined') return;
                 // RPRS-18 In mobile click fired without mouseover. so get index irrespective of state
                 setIndex(view, view.state, plugin, opts, Number(index));
                 opts.transaction.select(view, view.state, plugin, opts, items[Number(index)], match);

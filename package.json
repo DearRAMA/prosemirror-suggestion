@@ -1,6 +1,6 @@
 {
   "name": "@dear-rama/prosemirror-suggestion",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Inline node cursor helper for ProseMirror",
   "author": "Nakwon CHOI <ch0494@gmail.com>",
   "license": "MIT",

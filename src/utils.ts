@@ -38,8 +38,8 @@ class DefaultSuggestionRegexpMatch<Item = any> {
       (allowPrefixChar ? '' : '(^|\\s)') +
       changeRegexSpecialCharactor(char) +
       (allowSpace ? 
-        "((?:\\p{L}|[-_\\+]|\\s)+)$" :
-        '((?:\\p{L}|[-_\\+])+)$'),
+        "((?:\\p{L}|[-_\\+]|\\s)*)$" :
+        '((?:\\p{L}|[-_\\+])*)$'),
       "u"
     );
   }
@@ -74,8 +74,8 @@ export function getRegex<Item>(opts: Pick<SuggestionOption<Item>, 'match'>): Sug
       (allowPrefixChar ? '' : '(^|\\s)') +
       changeRegexSpecialCharactor(char) +
       (allowSpace ? 
-        "((?:\\p{L}|[-_\\+]|\\s)+)$" :
-        '((?:\\p{L}|[-_\\+])+)$'),
+        "((?:\\p{L}|[-_\\+]|\\s)*)$" :
+        '((?:\\p{L}|[-_\\+])*)$'),
       "u"
     ),
     valid: false,
